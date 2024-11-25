@@ -1,6 +1,6 @@
 package com.example.androidtp2
 
 data class RegisterData(
-    val username : String,
+    val login : String,
     val password : String
 )

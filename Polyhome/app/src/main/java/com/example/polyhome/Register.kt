@@ -23,7 +23,7 @@ class Register : AppCompatActivity() {
             insets
         }
 
-        val btnRegister = findViewById<Button>(R.id.btnRegister)
+        val btnRegister = findViewById<Button>(R.id.btnLogin)
         btnRegister.setOnClickListener {
             register()
         }
