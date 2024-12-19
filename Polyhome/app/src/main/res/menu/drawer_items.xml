@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/navdash"
+        android:title="Dashboard"/>
+
+    <item
+        android:icon="@drawable/devices"
+        android:id="@+id/navdevices"
+        android:title="Listes des périphériques"/>
+
+    <item
+        android:icon="@drawable/logout"
+        android:id="@+id/navdeconnexion"
+        android:title="Deconnexion"/>
+
+
+</menu>

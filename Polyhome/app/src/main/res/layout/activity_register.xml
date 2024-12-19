@@ -56,7 +56,8 @@
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/txtRegisterName"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                tools:text="Marel" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -70,7 +71,8 @@
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/txtRegisterPassword"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                tools:text="Marel" />
 
         </com.google.android.material.textfield.TextInputLayout>
 

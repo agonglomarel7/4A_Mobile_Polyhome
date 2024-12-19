@@ -3,6 +3,7 @@ package com.example.polyhome
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.widget.Button
@@ -17,73 +18,97 @@ class Login : AppCompatActivity() {
     private lateinit var passwordField: EditText
     private lateinit var loginButton: Button
 
-    private lateinit var callsignUp:Button;
-
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
+        // Assurez-vous que le fichier XML est chargé avant de référencer les vues
+        setContentView(R.layout.activity_login)
+
+        // Initialisation des vues après setContentView
         usernameField = findViewById(R.id.lblusernameLogin)
         passwordField = findViewById(R.id.lblPasswordLogin)
         loginButton = findViewById(R.id.btnLogin)
 
-        super.onCreate(savedInstanceState)
-
+        // Paramétrage de l'écran plein
         window.setFlags(
             WindowManager.LayoutParams.FLAG_FULLSCREEN,
             WindowManager.LayoutParams.FLAG_FULLSCREEN
         )
         enableEdgeToEdge()
-        setContentView(R.layout.activity_login)
 
-
-
+        // Gestion du clic sur le bouton de connexion
         loginButton.setOnClickListener {
             login()
         }
-
     }
 
-
-    public fun registerNewAccount(view: View) {
+    // Gestion du clic sur le bouton d'inscription
+    fun registerNewAccount(view: View) {
         val intent = Intent(this, Register::class.java)
         startActivity(intent)
     }
 
-    public fun login() {
-        val username = usernameField.text.toString()
-        val password = passwordField.text.toString()
+    // Méthode de connexion
+    private fun login() {
+        runOnUiThread {
 
-        if (username.isNotBlank() && password.isNotBlank()) {
-            val loginData = LoginData(username, password)
+            val username = usernameField.text.toString()
+            val password = passwordField.text.toString()
 
-            Api().post(
-                "https://polyhome.lesmoulinsdudev.com/api/users/auth",
-                loginData,
-                onSuccess = { responseCode, token: String? ->
-                    if (responseCode == 200 && token != null) {
-                        loginSuccess(responseCode, token)
-                    } else {
-                        Toast.makeText(
-                            this,
-                            "Erreur de connexion. Vérifiez vos informations.",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                },
-                securityToken = null
-            )
-        }else{
-            Toast.makeText(this, "Veuillez remplir tous les champs.", Toast.LENGTH_SHORT).show()
+            if (username.isNotBlank() && password.isNotBlank()) {
+                Log.d("LoginActivity", "Username: $username, Password: $password") // Debug
+                val loginData = LoginData(username, password)
+
+                Api().post<LoginData, Map<String, String>>(
+                    "https://polyhome.lesmoulinsdudev.com/api/users/auth",
+                        loginData,
+                        onSuccess = { responseCode: Int, tokenData: Map<String, String>? ->
+                            // Afficher le code de réponse pour débogage
+                            runOnUiThread {
+                                Toast.makeText(this, "Code de réponse : $responseCode", Toast.LENGTH_SHORT)
+                                    .show()
+                            }
+
+                            if (responseCode == 200 && tokenData != null) {
+                                loginSuccess(responseCode, tokenData["token"])
+                            } else {
+                                runOnUiThread {
+                                    Toast.makeText(
+                                        this,
+                                        "Erreur de connexion. Vérifiez vos informations.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
+                        },
+                        securityToken = null
+                    )
+                } else {
+                    Toast.makeText(this, "Veuillez remplir tous les champs.", Toast.LENGTH_SHORT).show()
+                }
         }
     }
 
+
+    // Gestion du succès de la connexion
     private fun loginSuccess(responseCode: Int, token: String?) {
-        if (responseCode == 200 && token != null) {
-            //val intent = Intent(this, Dashboard::class.java)
-            intent.putExtra("TOKEN", token)
-            startActivity(intent)
+        runOnUiThread {
+            if (responseCode == 200 && token != null) {
+                val username = usernameField.text.toString()
+                // Stockage du token dans SharedPreferences
+                val sharedPreferences = getSharedPreferences("PolyHomePrefs", MODE_PRIVATE)
+                with(sharedPreferences.edit()) {
+                    putString("TOKEN", token)
+                    apply()
+                }
+
+                // Redirection vers le Dashboard
+                val intent = Intent(this, home::class.java)
+                intent.putExtra("USERNAME", username) // Passe le nom d'utilisateur
+                startActivity(intent)
+                finish() // Termine l'activité actuelle
+            }
         }
     }
-
-
 }

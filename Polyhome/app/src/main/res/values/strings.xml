@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Polyhome</string>
+    <string name="welcome">Welcome</string>
+    <string name="liste_de_vos_maisons">Liste de vos Maisons</string>
 </resources>

@@ -5,8 +5,9 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#5560A2"
-    tools:context=".MainActivity">
+    android:background="#E1E3F2"
+    tools:context=".MainActivity"
+    tools:ignore="MissingClass">
 
     <ImageView
         android:id="@+id/imageSplash"
@@ -25,6 +26,7 @@
         android:id="@+id/titleSplash"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="50dp"
         android:fontFamily="cursive"
         android:text="Virtual's house"
         android:textAlignment="center"
@@ -41,6 +43,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Modern Chalet with Smart Home Features"
+        android:textAlignment="center"
         android:textSize="20sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
