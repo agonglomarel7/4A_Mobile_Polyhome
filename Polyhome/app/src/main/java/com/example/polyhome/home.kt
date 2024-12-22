@@ -36,7 +36,6 @@ class home : AppCompatActivity() {
     private lateinit var userAdapter: UserAdapter
     private lateinit var listViewUsers: ListView
     private lateinit var txtUserInput:EditText
-    private lateinit var btnAddUser:Button
     private val Users = mutableListOf<User>()
 
 
@@ -47,26 +46,21 @@ class home : AppCompatActivity() {
 
         spinHome = findViewById(R.id.spinHome)
         txtUserInput = findViewById(R.id.lblAddUser)
-        btnAddUser = findViewById(R.id.btnaddUser)
         listViewUsers = findViewById(R.id.listViewUsers)
 
 
-        // Appliquer les marges pour les barres système
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
 
-        // Trouver le bouton
         val btnDevices = findViewById<Button>(R.id.btnGoToDevices)
 
-        // Configuration de la Toolbar
+
         val toolbar = findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
 
-
-        // Gérer le clic
         btnDevices.setOnClickListener {
             val intent =  Intent(this, DevicesActivity::class.java)
             startActivity(intent)
@@ -85,17 +79,26 @@ class home : AppCompatActivity() {
         listViewUsers.adapter = userAdapter
 
         // Charger la liste des utilisateurs au démarrage
-        val sharedPreferences = getSharedPreferences("PolyHomePrefs", MODE_PRIVATE)
-        val token = sharedPreferences.getString("TOKEN", null)
+        val sharedPreferences = getSharedPreferences("PolyKeyPrefs", MODE_PRIVATE)
+        val token = sharedPreferences.getString("Key_Token", null)
 
         if (token != null) {
-           getUsersFromHouse(126, token) // Remplacez 126 par l'ID approprié de la maison
+            // Récupérer l'ID de la maison et charger les utilisateurs
+            getHouseId(token) { houseId ->
+                if (houseId != -1) {
+                    getUsersFromHouse(houseId, token)
+                } else {
+                    Toast.makeText(this, "Aucune maison trouvée pour cet utilisateur.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        } else {
+            Toast.makeText(this, "Token manquant. Veuillez vous reconnecter.", Toast.LENGTH_SHORT).show()
         }
 
 
+
         // Récupérer le nom d'utilisateur
-        val username = intent.getStringExtra("USERNAME") ?: "Utilisateur inconnu"
-        Log.d("HomeActivity", "Nom d'utilisateur reçu : $username")
+        val username = intent.getStringExtra("Key_UserName") ?: "Utilisateur inconnu"
 
         // Mettre à jour le TextView
         val listUserNameTextView = findViewById<TextView>(R.id.textUsername)
@@ -108,8 +111,8 @@ class home : AppCompatActivity() {
         btnAddUser.setOnClickListener {
             val userLogin = txtUserInput.text.toString().trim()
             if (userLogin.isNotBlank()) {
-                val sharedPreferences = getSharedPreferences("PolyHomePrefs", MODE_PRIVATE)
-                val token = sharedPreferences.getString("TOKEN", null)
+                val sharedPreferences = getSharedPreferences("PolyKeyPrefs", MODE_PRIVATE)
+                val token = sharedPreferences.getString("Key_Token", null)
 
                 if (token != null) {
                     // Appel pour récupérer dynamiquement le houseId
@@ -127,8 +130,6 @@ class home : AppCompatActivity() {
                 Toast.makeText(this, "Veuillez entrer un nom d'utilisateur.", Toast.LENGTH_SHORT).show()
             }
         }
-
-
         // appel des fun d'API
         initializeSpinners()
         loadHome()
@@ -158,7 +159,7 @@ class home : AppCompatActivity() {
 
     private fun handleLogout() {
         // Supprimez les préférences utilisateur
-        val sharedPreferences = getSharedPreferences("PolyHomePrefs", MODE_PRIVATE)
+        val sharedPreferences = getSharedPreferences("PolyKeyPrefs", MODE_PRIVATE)
         sharedPreferences.edit().clear().apply()
 
         // Redirigez l'utilisateur vers l'écran de connexion
@@ -172,8 +173,8 @@ class home : AppCompatActivity() {
 
     private fun loadHome() {
 
-        val sharedPreferences = getSharedPreferences("PolyHomePrefs", MODE_PRIVATE)
-        val token = sharedPreferences.getString("TOKEN", null)
+        val sharedPreferences = getSharedPreferences("PolyKeyPrefs", MODE_PRIVATE)
+        val token = sharedPreferences.getString("Key_Token", null)
 
         if (token == null) {
             Toast.makeText(
@@ -183,7 +184,6 @@ class home : AppCompatActivity() {
             ).show()
             return
         } else {
-            Log.d("HomeActivity", "Token utilisé pour l'API : $token")
             Api().get<List<ListHomeData>>(
                 "https://polyhome.lesmoulinsdudev.com/api/houses",
                 onSuccess = { responseCode, loadedHomes ->
@@ -229,7 +229,6 @@ class home : AppCompatActivity() {
 
         Thread {
             try {
-                // Appel GET vers l'API
                 val connection = URL(url).openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
                 connection.setRequestProperty("Authorization", "Bearer $token")
@@ -240,28 +239,22 @@ class home : AppCompatActivity() {
                     val inputStream = connection.inputStream.bufferedReader().use { it.readText() }
                     val houses = JSONArray(inputStream)
 
-                    // Parcours des maisons pour trouver celle où "owner" = true
                     for (i in 0 until houses.length()) {
                         val house = houses.getJSONObject(i)
                         val isOwner = house.getBoolean("owner")
                         if (isOwner) {
                             val houseId = house.getInt("houseId")
-
-                            // Sauvegarde dans SharedPreferences pour réutilisation
-                            val sharedPreferences = getSharedPreferences("PolyHomePrefs", MODE_PRIVATE)
+                            val sharedPreferences = getSharedPreferences("PolyKeyPrefs", MODE_PRIVATE)
                             with(sharedPreferences.edit()) {
                                 putInt("HOUSE_ID", houseId)
                                 apply()
                             }
-
-                            // Retourne le houseId via le callback
                             runOnUiThread {
                                 callback(houseId)
                             }
                             return@Thread
                         }
                     }
-                    // Aucun houseId trouvé
                     runOnUiThread { callback(-1) }
 
                 } else {
@@ -324,21 +317,26 @@ class home : AppCompatActivity() {
     private fun getUsersFromHouse(houseId: Int, token: String) {
         val url = "https://polyhome.lesmoulinsdudev.com/api/houses/$houseId/users"
 
-        Api().get<List<User>>(
+        Api().get<List<Map<String, Any>>>(
             url,
-            onSuccess = { responseCode, users ->
+            onSuccess = { responseCode, usersData ->
                 runOnUiThread {
-                    if (responseCode == 200 && users != null) {
-                        // Rafraîchit la liste locale
+                    if (responseCode == 200 && usersData != null) {
                         Users.clear()
-                        Users.addAll(users)
 
-                        // Met à jour l'adaptateur de la ListView
+                        // Conversion des données de l'API en objets User
+                        Users.addAll(
+                            usersData.map {
+                                val userLogin = it["userLogin"] as String
+                                val owner = (it["owner"] as Number).toInt() == 1 // Conversion explicite en entier puis boolean
+                                User(userLogin = userLogin, owner = owner)
+                            }
+                        )
+
                         userAdapter.notifyDataSetChanged()
-
                         Toast.makeText(this, "Liste des utilisateurs mise à jour.", Toast.LENGTH_SHORT).show()
                     } else {
-                        handleApiError(responseCode)
+                        handleError(responseCode)
                     }
                 }
             },
@@ -346,52 +344,51 @@ class home : AppCompatActivity() {
         )
     }
 
-    private fun handleApiError(responseCode: Int) {
-        val errorMessage = when (responseCode) {
-            400 -> "Données incorrectes."
-            403 -> "Accès interdit : Token invalide ou non autorisé."
-            500 -> "Erreur serveur. Veuillez réessayer plus tard."
-            else -> "Erreur inconnue : Code $responseCode"
-        }
-        Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show()
-        Log.e("HomeActivity", "Erreur API : $responseCode")
-    }
+
+
 
     private fun deleteUserFromHouse(user: User) {
-        val houseId = 126
-        val sharedPreferences = getSharedPreferences("PolyHomePrefs", MODE_PRIVATE)
-        val token = sharedPreferences.getString("TOKEN", null)
+        val sharedPreferences = getSharedPreferences("PolyKeyPrefs", MODE_PRIVATE)
+        val token = sharedPreferences.getString("Key_Token", null)
 
         if (token != null) {
-            // Supprimer localement l'utilisateur avant l'appel API
-            Users.remove(user)
-            userAdapter.notifyDataSetChanged()
+            // Récupérer l'ID de la maison dynamiquement
+            getHouseId(token) { houseId ->
+                if (houseId != -1) {
+                    val url = "https://polyhome.lesmoulinsdudev.com/api/houses/$houseId/users"
 
-            Api().delete(
-                "https://polyhome.lesmoulinsdudev.com/api/houses/$houseId/users",
-                onSuccess = { responseCode ->
-                    runOnUiThread {
-                        if(responseCode ==200 ){
-                            Toast.makeText(this, "Utilisateur supprimé : ${user.userLogin}", Toast.LENGTH_SHORT).show()
+                    // Ajoutez un corps ou log si nécessaire
+                    val body = """{"userLogin": "${user.userLogin}"}""" // Si l'API attend un corps
 
-                            getUsersFromHouse(houseId, token)
-                        }
-                        else if(responseCode == 403 ){
-                            Toast.makeText(this, "Accès interdit : Token invalide ou non propriétaire.", Toast.LENGTH_SHORT).show()
-                        }
-                        else if(responseCode == 500 ){
-                            Toast.makeText(this, "Erreur serveur. Veuillez réessayer plus tard.", Toast.LENGTH_SHORT).show()
-                        }
-                        else  {
-                                Toast.makeText(this, "Erreur inconnue : $responseCode", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                },
-                securityToken = token
-            )
+                    Api().delete(
+                        url,
+                        //body = body, // Ajoutez cette ligne si un corps est attendu
+                        onSuccess = { responseCode ->
+                            runOnUiThread {
+                                when (responseCode) {
+                                    200 -> {
+                                        Toast.makeText(this, "Utilisateur supprimé avec succès.", Toast.LENGTH_SHORT).show()
+                                        // Recharger la liste des utilisateurs après suppression
+                                        getUsersFromHouse(houseId, token)
+                                    }
+                                    403 -> Toast.makeText(this, "Accès interdit : Token invalide ou non propriétaire.", Toast.LENGTH_SHORT).show()
+                                    500 -> Toast.makeText(this, "Erreur serveur. Veuillez réessayer plus tard.", Toast.LENGTH_SHORT).show()
+                                    else -> Toast.makeText(this, "Erreur inconnue : $responseCode", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        },
+
+                        securityToken = token
+                    )
+                } else {
+                    Toast.makeText(this, "ID de la maison introuvable. Impossible de supprimer.", Toast.LENGTH_SHORT).show()
+                }
+            }
         } else {
             Toast.makeText(this, "Token manquant. Impossible de supprimer.", Toast.LENGTH_SHORT).show()
         }
     }
+
+
 
 }

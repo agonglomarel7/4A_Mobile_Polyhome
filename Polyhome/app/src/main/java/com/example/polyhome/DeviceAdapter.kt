@@ -6,43 +6,44 @@ import android.widget.Button
 import android.widget.TextView
 import android.widget.BaseAdapter
 import android.widget.LinearLayout
+import android.graphics.Color
+import android.widget.ArrayAdapter
 import com.example.polyhome.Device
 import com.example.polyhome.R
 
 class DeviceAdapter(
     private val context: Context,
     private val devices: List<Device>,
-    private val onCommandClicked: (String, String) -> Unit
-) : BaseAdapter() {
+    private val onCommandClick: (Device, String) -> Unit
+) : ArrayAdapter<Device>(context, 0, devices) {
 
-    override fun getCount(): Int = devices.size
-
-    override fun getItem(position: Int): Any = devices[position]
-
-    override fun getItemId(position: Int): Long = position.toLong()
-
-    override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
+    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
         val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.item_devices, parent, false)
 
-        val device = devices[position]
-        val deviceName = view.findViewById<TextView>(R.id.deviceName)
-        val commandButtons = view.findViewById<LinearLayout>(R.id.commandButtons)
+        val device = getItem(position)!!
+        val deviceNameTextView = view.findViewById<TextView>(R.id.deviceName)
+        val commandButtonsLayout = view.findViewById<LinearLayout>(R.id.commandButtons)
 
-        deviceName.text = device.id
+        deviceNameTextView.text = device.id
 
-        commandButtons.removeAllViews()
-
-        // Dynamically add buttons for each command
+        commandButtonsLayout.removeAllViews()
         for (command in device.availableCommands) {
             val button = Button(context).apply {
-                text = command
-                setOnClickListener {
-                    onCommandClicked(device.id, command)
+                when (command.lowercase()) {
+                    "open", "turn on" -> setBackgroundColor(Color.GREEN) // Vert
+                    "close", "turn off" -> setBackgroundColor(Color.RED) // Rouge
+                    "stop" -> setBackgroundColor(Color.parseColor("#FFA500")) // Orange
+                    else -> setBackgroundColor(Color.GRAY) // Couleur par défaut
                 }
             }
-            commandButtons.addView(button)
-        }
 
+            button.text = command
+
+            button.setOnClickListener {
+                onCommandClick(device, command)
+            }
+            commandButtonsLayout.addView(button)
+        }
         return view
     }
 }

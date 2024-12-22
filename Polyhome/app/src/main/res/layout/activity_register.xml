@@ -54,10 +54,9 @@
             android:layout_marginBottom="10dp">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/txtRegisterName"
+                android:id="@+id/lblRegisterName"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                tools:text="Marel" />
+                android:layout_height="wrap_content" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -69,7 +68,7 @@
             app:passwordToggleEnabled="true">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/txtRegisterPassword"
+                android:id="@+id/lblRegisterPassword"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 tools:text="Marel" />
@@ -77,7 +76,7 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <Button
-            android:id="@+id/btnLogin"
+            android:id="@+id/btnRegister"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:backgroundTint="#4CAF50"

@@ -1,6 +1,5 @@
 package com.example.polyhome
 
-import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -31,9 +30,9 @@ class Register : AppCompatActivity() {
         }
 
         // Initialisation des vues
-        lblName = findViewById(R.id.txtRegisterName)
-        lblPassword = findViewById(R.id.txtRegisterPassword)
-        btnRegister = findViewById(R.id.btnLogin)
+        lblName = findViewById(R.id.lblRegisterName)
+        lblPassword = findViewById(R.id.lblRegisterPassword)
+        btnRegister = findViewById(R.id.btnRegister)
 
         // Gestion du clic sur le bouton d'inscription
         btnRegister.setOnClickListener {

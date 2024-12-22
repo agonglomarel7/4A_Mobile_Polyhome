@@ -1,44 +1,58 @@
 package com.example.polyhome
 
 import DeviceAdapter
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.ListView
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import org.json.JSONArray
 import java.net.HttpURLConnection
 import java.net.URL
 
 class DevicesActivity : AppCompatActivity() {
-
-    // Liste locale des appareils
     private val devices = mutableListOf<Device>()
     private lateinit var deviceAdapter: DeviceAdapter
 
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_devices) // Assurez-vous que ce fichier existe
+        setContentView(R.layout.activity_devices)
 
-        // Référencement de la ListView
         val listView = findViewById<ListView>(R.id.listView)
 
-        // Initialisation de l'adaptateur
-        deviceAdapter = DeviceAdapter(this, devices) { _, _ ->
-            // Pour l'instant, les commandes ne sont pas encore utilisées
+        deviceAdapter = DeviceAdapter(this, devices) { device, command ->
+            Toast.makeText(this, "Commande '$command' pour l'appareil ", Toast.LENGTH_SHORT).show()
+
+            val sharedPreferences = getSharedPreferences("PolyKeyPrefs", MODE_PRIVATE)
+            val token = sharedPreferences.getString("Key_Token", null)
+
+            if (token != null) {
+                fetchHouseId(token) { houseId ->
+                    if (houseId != -1) {
+
+                        sendCommandToDevice(houseId, device.id, command, token)
+
+                    } else {
+                        Toast.makeText(this, "ID de la maison introuvable.", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } else {
+                Toast.makeText(this, "Token manquant.", Toast.LENGTH_SHORT).show()
+            }
         }
 
-        // Associez l'adaptateur à la ListView
         listView.adapter = deviceAdapter
 
-        // Récupération du token
-        val sharedPreferences = getSharedPreferences("PolyHomePrefs", MODE_PRIVATE)
-        val token = sharedPreferences.getString("TOKEN", null)
+        val sharedPreferences = getSharedPreferences("PolyKeyPrefs", MODE_PRIVATE)
+        val token = sharedPreferences.getString("Key_Token", null)
 
         if (token != null) {
-            getHouseId(token) { houseId ->
+            fetchHouseId(token) { houseId ->
                 if (houseId != -1) {
-                    getDevices(houseId, token)
+                    fetchHouseDevices(houseId, token)
                 } else {
                     Toast.makeText(this, "House ID not found", Toast.LENGTH_SHORT).show()
                 }
@@ -48,7 +62,7 @@ class DevicesActivity : AppCompatActivity() {
         }
     }
 
-    private fun getHouseId(token: String, callback: (Int) -> Unit) {
+    private fun fetchHouseId(token: String, callback: (Int) -> Unit) {
         val url = "https://polyhome.lesmoulinsdudev.com/api/houses"
 
         Thread {
@@ -75,17 +89,17 @@ class DevicesActivity : AppCompatActivity() {
 
                     runOnUiThread { callback(-1) }
                 } else {
-                    Log.e("getHouseId", "Error: $responseCode")
+                    Log.e("fetchHouseId", "Error: $responseCode")
                     runOnUiThread { callback(-1) }
                 }
             } catch (e: Exception) {
-                Log.e("getHouseId", "Exception: ${e.message}")
+                Log.e("fetchHouseId", "Exception: ${e.message}")
                 runOnUiThread { callback(-1) }
             }
         }.start()
     }
 
-    private fun getDevices(houseId: Int, token: String) {
+    private fun fetchHouseDevices(houseId: Int, token: String) {
         val url = "https://polyhome.lesmoulinsdudev.com/api/houses/$houseId/devices"
 
         Thread {
@@ -98,9 +112,8 @@ class DevicesActivity : AppCompatActivity() {
                 val responseCode = connection.responseCode
                 if (responseCode == 200) {
                     val response = connection.inputStream.bufferedReader().use { it.readText() }
-                    val jsonObject = org.json.JSONObject(response) // On parse d'abord l'objet JSON
+                    val jsonObject = org.json.JSONObject(response)
 
-                    // Récupérer le tableau des appareils à partir de la clé "devices"
                     val jsonArray = jsonObject.getJSONArray("devices")
 
                     val fetchedDevices = mutableListOf<Device>()
@@ -114,26 +127,52 @@ class DevicesActivity : AppCompatActivity() {
                         for (j in 0 until commandsArray.length()) {
                             availableCommands.add(commandsArray.getString(j))
                         }
-
                         fetchedDevices.add(Device(id, type, availableCommands))
                     }
-
-                    // Mettre à jour l'adaptateur avec les données
                     runOnUiThread {
                         devices.clear()
                         devices.addAll(fetchedDevices)
                         deviceAdapter.notifyDataSetChanged()
                     }
                 } else {
-                    Log.e("getDevices", "Erreur : Code $responseCode")
                     runOnUiThread {
                         Toast.makeText(this, "Erreur lors du chargement : $responseCode", Toast.LENGTH_SHORT).show()
                     }
                 }
             } catch (e: Exception) {
-                Log.e("getDevices", "Exception : ${e.message}")
                 runOnUiThread {
                     Toast.makeText(this, "Erreur : ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }.start()
+    }
+
+    private fun sendCommandToDevice(houseId: Int, deviceId: String, command: String, token: String) {
+        val url = "https://polyhome.lesmoulinsdudev.com/api/houses/$houseId/devices/$deviceId/command"
+
+        Thread {
+            try {
+                val connection = URL(url).openConnection() as HttpURLConnection
+                connection.requestMethod = "POST"
+                connection.setRequestProperty("Authorization", "Bearer $token")
+                connection.setRequestProperty("Content-Type", "application/json")
+                connection.doOutput = true
+
+                val jsonBody = """{ "command": "$command" }"""
+                connection.outputStream.write(jsonBody.toByteArray())
+
+                val responseCode = connection.responseCode
+                runOnUiThread {
+                    when (responseCode) {
+                        200 -> Toast.makeText(this, "Commande exécutée avec succès.", Toast.LENGTH_SHORT).show()
+                        403 -> Toast.makeText(this, "Accès interdit : Vous n'êtes pas autorisé.", Toast.LENGTH_SHORT).show()
+                        500 -> Toast.makeText(this, "Erreur serveur. Veuillez réessayer plus tard.", Toast.LENGTH_SHORT).show()
+                        else -> Toast.makeText(this, "Erreur inconnue : $responseCode", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } catch (e: Exception) {
+                runOnUiThread {
+                    Toast.makeText(this, "Erreur lors de l'envoi : ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
         }.start()

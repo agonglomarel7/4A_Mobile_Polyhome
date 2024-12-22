@@ -59,11 +59,10 @@
             android:hint="Enter your username.">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/lblusernameLogin"
+                android:id="@+id/lblUserName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="text"
-                android:text="Marel12" />
+                android:inputType="text" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -76,7 +75,7 @@
             app:passwordToggleEnabled="true">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/lblPasswordLogin"
+                android:id="@+id/lblUSerPassword"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textPassword" />
@@ -85,7 +84,7 @@
 
         <!-- Login Button -->
         <Button
-            android:id="@+id/btnLogin"
+            android:id="@+id/btnRegister"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"

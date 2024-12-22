@@ -26,9 +26,9 @@ class Login : AppCompatActivity() {
         setContentView(R.layout.activity_login)
 
         // Initialisation des vues après setContentView
-        usernameField = findViewById(R.id.lblusernameLogin)
-        passwordField = findViewById(R.id.lblPasswordLogin)
-        loginButton = findViewById(R.id.btnLogin)
+        usernameField = findViewById(R.id.lblUserName)
+        passwordField = findViewById(R.id.lblUSerPassword)
+        loginButton = findViewById(R.id.btnRegister)
 
         // Paramétrage de l'écran plein
         window.setFlags(
@@ -64,12 +64,6 @@ class Login : AppCompatActivity() {
                     "https://polyhome.lesmoulinsdudev.com/api/users/auth",
                         loginData,
                         onSuccess = { responseCode: Int, tokenData: Map<String, String>? ->
-                            // Afficher le code de réponse pour débogage
-                            runOnUiThread {
-                                Toast.makeText(this, "Code de réponse : $responseCode", Toast.LENGTH_SHORT)
-                                    .show()
-                            }
-
                             if (responseCode == 200 && tokenData != null) {
                                 loginSuccess(responseCode, tokenData["token"])
                             } else {
@@ -97,17 +91,17 @@ class Login : AppCompatActivity() {
             if (responseCode == 200 && token != null) {
                 val username = usernameField.text.toString()
                 // Stockage du token dans SharedPreferences
-                val sharedPreferences = getSharedPreferences("PolyHomePrefs", MODE_PRIVATE)
+                val sharedPreferences = getSharedPreferences("PolyKeyPrefs", MODE_PRIVATE)
                 with(sharedPreferences.edit()) {
-                    putString("TOKEN", token)
+                    putString("Key_Token", token)
                     apply()
                 }
 
                 // Redirection vers le Dashboard
                 val intent = Intent(this, home::class.java)
-                intent.putExtra("USERNAME", username) // Passe le nom d'utilisateur
+                intent.putExtra("Key_UserName", username) // Passe le nom d'utilisateur
                 startActivity(intent)
-                finish() // Termine l'activité actuelle
+                finish()
             }
         }
     }

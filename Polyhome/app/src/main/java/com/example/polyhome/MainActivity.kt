@@ -32,12 +32,10 @@ class MainActivity : AppCompatActivity() {
         )
         setContentView(R.layout.activity_main)
 
-        // Initialisation des vues
         image = findViewById(R.id.imageSplash)
         bigTitle = findViewById(R.id.titleSplash)
         slogan = findViewById(R.id.subtitleSplash)
 
-        // Appliquer les insets système pour la compatibilité
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
