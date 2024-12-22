@@ -10,4 +10,7 @@ votre propre application mobile.
 
 -  AGONGLO MAREL
 -  MOUHID Soukaina
+# Fonctionnalités bonus
+-  Ajout de la deconnexion
+-  Affichage de la liste des utilisateurs ajoutés à la maison
 
