@@ -5,7 +5,9 @@ Vous venez d’acquérir un chalet moderne équipé d’objets connectés : vole
 éclairages. Vous avez testé plusieurs solutions domotique pour piloter tous ces équipements,
 mais aucun ne vous convient parfaitement. Aussi, vous avez pris la décision de développer
 votre propre application mobile.
+
 # Nom & Prenom des Etudiants
 
-AGONGLO MAREL
-MOUHID Soukaina
+-  AGONGLO MAREL
+-  MOUHID Soukaina
+
